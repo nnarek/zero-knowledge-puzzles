@@ -12,6 +12,9 @@ template IncreasingDistance(n) {
     signal input in2[n];
     signal input in3[n];
 
+    for (var x = 0; x < n; x++) {
+        in1[x] * in2[x] === in3[x] + x;
+    }
 }
 
 component main = IncreasingDistance(4);

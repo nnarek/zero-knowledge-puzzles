@@ -7,6 +7,9 @@ pragma circom 2.1.8;
 template MultiANDNoOut(n) {
     signal input in[n];
 
+    for (var x = 0; x < n; x++) {
+        1 === in[x] ;
+    }
 }
 
 component main = MultiANDNoOut(4);
