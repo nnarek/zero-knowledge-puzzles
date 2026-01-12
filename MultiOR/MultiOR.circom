@@ -10,6 +10,20 @@ template MultiOR(n) {
     signal input in[n];
     signal output out;
 
+    component eq[n];
+    var count = 0;
+    for (var x = 0; x < n; x++) {
+        eq[x] = IsEqual();
+        eq[x].in[0] <== in[x];
+        eq[x].in[1] <== 1;
+        count += eq[x].out;
+
+        0 === in[x]*(in[x] - 1);
+    }
+
+    component is_zero = IsZero();
+    is_zero.in <== count;
+    out <== 1-is_zero.out;
 }
 
 component main = MultiOR(4);
