@@ -1,4 +1,6 @@
 pragma circom 2.1.4;
+include "../node_modules/circomlib/circuits/comparators.circom";
+include "../node_modules/circomlib/circuits/gates.circom";
 
 // In this exercise , we will learn how to check the range of a private variable and prove that 
 // it is within the range . 
@@ -9,10 +11,19 @@ pragma circom 2.1.4;
 
 
 template Range() {
-    // your code here
-   
+    signal input a;
+    signal input lowerbound;
+    signal input upperbound;
+    signal output out;
+
+    // TODO mark lowerbound and upperbound as public 
+    component and = AND();
+    and.a <== LessEqThan(252)([a,upperbound]);
+    and.b <== LessEqThan(252)([lowerbound,a]);
+
+    out <== and.out;
 }
 
-component main  = Range();
+component main {public [lowerbound,upperbound]} = Range();
 
 

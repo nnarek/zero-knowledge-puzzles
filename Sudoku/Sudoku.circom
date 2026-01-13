@@ -1,7 +1,7 @@
 pragma circom 2.1.4;
 
 include "../node_modules/circomlib/circuits/comparators.circom";
-
+include "../node_modules/circomlib/circuits/gates.circom";
 
 /*
     Given a 4x4 sudoku board with array signal input "question" and "solution", check if the solution is correct.
@@ -19,6 +19,42 @@ include "../node_modules/circomlib/circuits/comparators.circom";
     "out" is the signal output of the circuit. "out" is 1 if the solution is correct, otherwise 0.                                                                               
 */
 
+// check whether input array is permutation of 1...n numbers 
+// assuming it is already checked that all elements are positive
+template From1ToN(n) {
+    assert(n > 0);
+    assert(n <= 1024); 
+    signal input in[n];
+    signal output out;
+
+
+    // checking that all array elements are unique and sum up to n(n+1)/2
+
+    var sum = 0;
+    var index = 0;
+    component eq[(n*(n+1))\2];
+    for(var x = 0; x < n; x++){
+        sum += in[x];
+        for(var y = x+1; y < n; y++){
+            eq[index] = IsEqual();
+            eq[index].in[0] <== in[x];
+            eq[index].in[1] <== in[y];
+            index++;
+        }
+    }
+
+    signal outs[n*(n-1)\2];
+    outs[0] <== 1 - eq[0].out;
+    for(var i = 1; i < n*(n-1)\2; i++){
+        outs[i] <== outs[i-1] * (1 - eq[i].out);
+    }
+
+    component sum_eq = IsEqual();
+    sum_eq.in[0] <== sum;
+    sum_eq.in[1] <== (n*(n+1))\2;
+
+    out <== sum_eq.out * outs[(n*(n-1))\2 -1];
+}
 
 template Sudoku () {
     // Question Setup 
@@ -74,10 +110,85 @@ template Sudoku () {
 
     // Write your solution from here.. Good Luck!
     
+    // above lines checks that all rows have only one known value
+    signal outs[1+16+4+4+4];
+    var out_index = 0;
+    outs[out_index] <== 1;
+
+    component eq1[16];
+    component eq2[16];
+    component or[16];
+    component greater[16];
+    signal and[16];
+    // checking that non-zero values of question present in solution too
+    for(var q = 0; q < 16; q++){
+        eq1[q] = IsEqual();
+        eq1[q].in[0] <== question[q];
+        eq1[q].in[1] <== 0;
+
+        eq2[q] = IsEqual();
+        eq2[q].in[0] <== question[q];
+        eq2[q].in[1] <== solution[q];
+
+        or[q] = OR();
+        or[q].a <== eq1[q].out;
+        or[q].b <== eq2[q].out;
+
+        greater[q] = GreaterThan(252);
+        greater[q].in[0] <== solution[q];
+        greater[q].in[1] <== 0;
+
+        and[q] <== or[q].out * greater[q].out;
+
+        // we can not just check "and[q] == 1" because in this case we would not able to generate withness 
+        // we need to generate withness that solutions is incorrect too, in this case out should be 0 
+        outs[out_index+1] <== and[q] * outs[out_index];
+        out_index++;
+    }
+
+    //checking uniqueness of rows
+    component rowUnique[4];
+    for(var r = 0; r < 4; r++){
+        rowUnique[r] = From1ToN(4);
+        for(var c = 0; c < 4; c++){
+            rowUnique[r].in[c] <== solution[r*4 + c];
+        }
+        outs[out_index+1] <== rowUnique[r].out * outs[out_index];
+        out_index++;
+    }
     
-   
+    //checking uniqueness of columns
+    component colUnique[4];
+    for(var c = 0; c < 4; c++){
+        colUnique[c] = From1ToN(4);
+        for(var r = 0; r < 4; r++){
+            colUnique[c].in[r] <== solution[r*4 + c];
+        }
+        outs[out_index+1] <== colUnique[c].out * outs[out_index];
+        out_index++;
+    }
+
+    //checking uniqueness of 2x2 boxes
+    component boxUnique[4];
+    for(var x = 0; x < 2; x++){
+        for(var y = 0; y < 2; y++){
+            var bx = x*2; // x coordinate of first element of box
+            var by = y*2; // y coordinate of first element of box
+            var b = x*2 + y; // id of box
+            boxUnique[b] = From1ToN(4);
+            for(var ex = 0; ex < 2; ex++){
+                for(var ey = 0; ey < 2; ey++){
+                    boxUnique[b].in[ex*2 + ey] <== solution[(bx+ex)*4 + by+ey];
+                }
+            }
+            outs[out_index+1] <== boxUnique[b].out * outs[out_index];
+            out_index++;
+        }
+    }
+
+    out <== outs[out_index];
 }
 
-
 component main = Sudoku();
+
 
