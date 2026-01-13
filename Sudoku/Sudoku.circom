@@ -19,41 +19,41 @@ include "../node_modules/circomlib/circuits/gates.circom";
     "out" is the signal output of the circuit. "out" is 1 if the solution is correct, otherwise 0.                                                                               
 */
 
+
+function factorial (n) {
+    if (n <= 1) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    }
+}
+
 // check whether input array is permutation of 1...n numbers 
 // assuming it is already checked that all elements are positive
 template From1ToN(n) {
     assert(n > 0);
-    assert(n <= 1024); 
+    assert(n <= 56); 
     signal input in[n];
     signal output out;
 
-
-    // checking that all array elements are unique and sum up to n(n+1)/2
-
+    // circuit size is O(n)  
     var sum = 0;
-    var index = 0;
-    component eq[(n*(n+1))\2];
+    signal prod[n+1];
+    prod[0] <== 1;
     for(var x = 0; x < n; x++){
         sum += in[x];
-        for(var y = x+1; y < n; y++){
-            eq[index] = IsEqual();
-            eq[index].in[0] <== in[x];
-            eq[index].in[1] <== in[y];
-            index++;
-        }
+        prod[x+1] <== prod[x] * in[x];
     }
 
-    signal outs[n*(n-1)\2];
-    outs[0] <== 1 - eq[0].out;
-    for(var i = 1; i < n*(n-1)\2; i++){
-        outs[i] <== outs[i-1] * (1 - eq[i].out);
-    }
+    component eq = IsEqual();
+    eq.in[0] <== prod[n];
+    eq.in[1] <== factorial(n);
 
-    component sum_eq = IsEqual();
-    sum_eq.in[0] <== sum;
-    sum_eq.in[1] <== (n*(n+1))\2;
+    component eq1 = IsEqual();
+    eq1.in[0] <== sum;
+    eq1.in[1] <== (n*(n+1))/2;
 
-    out <== sum_eq.out * outs[(n*(n-1))\2 -1];
+    out <== eq.out * eq1.out;
 }
 
 template Sudoku () {
