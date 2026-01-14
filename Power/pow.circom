@@ -10,6 +10,8 @@ template Pow() {
    signal input a[2];
    signal output c;
 
+   
+
    c <-- a[0] ** a[1];
    // lets try to implement it for very big exponents too, by using binary exponentiation method, in this case circuit will have logarithmic size
    // we can assume that a[1] is less than 2^250
@@ -41,6 +43,8 @@ template Pow() {
    }
 
    c === power_products[250];
+
+   // TODO we still need to check that a[0]**a[1] does not overflow 
 
 }
 
