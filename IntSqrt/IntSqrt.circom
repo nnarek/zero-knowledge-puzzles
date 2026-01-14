@@ -24,10 +24,10 @@ include "../node_modules/circomlib/circuits/comparators.circom";
 template IntSqrt(n) {
     signal input in[2];
 
-    signal a <== LessThan(n)([(in[0] - 1)*(in[0] - 1) , in[1]]);
-    signal b <== GreaterThan(n)([(in[0] + 1)*(in[0] + 1) , in[1]]);
-    signal c <== LessEqThan(n)([in[0] , 2**(n\2)]); // prevents overflow
-    signal d <== GreaterEqThan(n)([in[0] , 0]); // sqrt can not be negative
+    signal a <== LessEqThan(n)([in[0]*in[0] , in[1]]);
+    signal b <== LessThan(n)([in[1], (in[0] + 1)*(in[0] + 1) ]);
+    signal c <== LessEqThan(n)([in[1] , 2**n-1]); // prevents overflow
+    signal d <== LessEqThan(n)([0, in[1]]); // input can not be negative
 
     1 === a;
     1 === b;
