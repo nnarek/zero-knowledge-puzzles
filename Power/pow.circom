@@ -7,32 +7,40 @@ include "../node_modules/circomlib/circuits/comparators.circom";
 // HINT: Non Quadratic constraints are not allowed. 
 
 template Pow() {
-   
    signal input a[2];
    signal output c;
 
    c <-- a[0] ** a[1];
-   // if we know that exponent is less than compile time known n then we can create fixed loop which calculates by multiplication iteratively
-   // in this case we can iterate n times and multiply a[0] each time to get the result, if one of results is equal to c then it is valid.
+   // lets try to implement it for very big exponents too, by using binary exponentiation method, in this case circuit will have logarithmic size
+   // we can assume that a[1] is less than 2^250
+   // we can compute all bits of a[1] without constraints and verify that that bits give a[1] when multiplied by powers of two
+   // then we can compute a[0]^(2^i) for all i and multiply those where bit is 1
+   signal less <== LessThan(252)([a[1], 1 << 250]);
+   signal non_neg <== GreaterEqThan(252)([a[1], 0]);
+   1 === less * non_neg;
 
-   var limit = 100;
+   signal bits[250];
+   signal power_sums[251];
+   power_sums[0] <== 0;
+   for (var i = 0; i < 250; i++) {
+       bits[i] <-- (a[1] >> i) & 1;
+       power_sums[i+1] <== power_sums[i] + bits[i] * (1 << i);
+   }
+   power_sums[250] === a[1];
 
-   signal powers[limit+1];
-   powers[0] <== 1;
-   for(var x=0; x<limit; x++) {
-      powers[x+1] <== powers[x] * a[0];
+
+   signal powers[251];// a[0]^(2^i)   
+   powers[0] <== a[0];
+   signal power_products[251]; // power_products[250] = a[0]^a[1] = a[0]^(b0*1+b1*2+b2*4+...) = a[0]^(b0*1) * a[0]^(b1*2) * a[0]^(b2*4) * ...
+   power_products[0] <== 1;
+   signal mul[250];
+   for (var i = 0; i < 250; i++) {
+      mul[i] <== bits[i] * powers[i] + (1 - bits[i]) * 1; // same as powers[i]**bits[i]
+      power_products[i+1] <== power_products[i] * mul[i];
+      powers[i+1] <== powers[i] * powers[i];
    }
-   component eq[limit+1];
-   for(var y=0; y<limit+1; y++) {
-      eq[y] = IsEqual();
-      eq[y].in[0] <== powers[y];
-      eq[y].in[1] <== c;
-   }
-   var sum = 0;
-   for(var z=0; z<limit+1; z++) {
-      sum = sum + eq[z].out;
-   }
-   sum === 1;     
+
+   c === power_products[250];
 
 }
 
