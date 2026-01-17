@@ -3,7 +3,7 @@ pragma circom 2.1.8;
 include "../node_modules/circomlib/circuits/comparators.circom";
 
 // Create template that selects an element from an array based on an index.
-// should fail if index is out of bounds
+// Should fail if index is out of bounds
 
 template ArraySelect(n) {
     signal input in[n];
