@@ -59,5 +59,18 @@ describe("ArraySelect -- Select element from array by index", function() {
         expect(Fr.eq(Fr.e(out), Fr.e(300))).to.be.true;
     });
 
+    it("Should fail when index is -1", async () => {
+        await expect(circuit.calculateWitness({
+            "in": [10, 20, 30, 40],
+            "index": -1
+        }, true)).to.be.rejected;
+    });
+
+    it("Should fail when index is out of bounds", async () => {
+        await expect(circuit.calculateWitness({
+            "in": [10, 20, 30, 40],
+            "index": 4
+        }, true)).to.be.rejected;
+    });
 
 });

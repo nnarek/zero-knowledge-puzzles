@@ -9,6 +9,16 @@ template ArraySelect(n) {
     signal input index;
     signal output out;
 
+    component less = LessThan(252);
+    less.in[0] <== index;
+    less.in[1] <== n;
+    less.out === 1; 
+
+    component greater = GreaterEqThan(252);
+    greater.in[0] <== index;
+    greater.in[1] <== 0;
+    greater.out === 1;
+
     // we can just return (index==0)*in0 + (index==1)*in1 + ...
     // not sure that we can solve with o(log(n)) sized circuits
     // we can compare index with n/2 and decide which half to go to
